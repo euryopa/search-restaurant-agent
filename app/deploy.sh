@@ -100,9 +100,9 @@ fi
 log_info "Configuring Docker authentication..."
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-# Build Docker image
-log_info "Building Docker image..."
-docker build -t "${ARTIFACT_REGISTRY_IMAGE}:${IMAGE_TAG}" -t "${ARTIFACT_REGISTRY_IMAGE}:latest" .
+# Build Docker image for 64-bit Linux (Cloud Run compatibility)
+log_info "Building Docker image for 64-bit Linux..."
+docker build --platform linux/amd64 -t "${ARTIFACT_REGISTRY_IMAGE}:${IMAGE_TAG}" -t "${ARTIFACT_REGISTRY_IMAGE}:latest" .
 
 # Push Docker image
 log_info "Pushing Docker image..."
@@ -125,8 +125,7 @@ gcloud run deploy "$SERVICE_NAME" \
     --no-cpu-throttling \
     --execution-environment=gen2 \
     --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=${PROJECT_ID},VERTEX_AI_LOCATION=${REGION}" \
-    --cpu-boost \
-    --startup-probe tcpSocket.port=3000,initialDelaySeconds=10,timeoutSeconds=30,periodSeconds=5,failureThreshold=10
+    --cpu-boost
 
 # Get service URL
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
