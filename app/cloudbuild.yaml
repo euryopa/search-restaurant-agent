@@ -30,6 +30,8 @@ steps:
       - '0'
       - '--max-instances'
       - '100'
+      - '--set-env-vars'
+      - 'VERTEX_AI_PROJECT_ID=$PROJECT_ID,VERTEX_AI_LOCATION=asia-northeast1'
 
 images:
   - gcr.io/$PROJECT_ID/search-restaurant-agent:$COMMIT_SHA
