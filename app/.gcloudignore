@@ -1,0 +1,16 @@
+node_modules/
+.git/
+.next/
+*.md
+.env*
+.vscode/
+*.log
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+*.test.*
+*.spec.*
+.dockerignore
+Dockerfile
