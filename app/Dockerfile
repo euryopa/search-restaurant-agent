@@ -64,4 +64,4 @@ CMD echo "Starting Next.js server..." && \
     echo "Node version: $(node --version)" && \
     echo "NPM version: $(npm --version)" && \
     echo "Starting server.js..." && \
-    node server.js
+    exec node server.js

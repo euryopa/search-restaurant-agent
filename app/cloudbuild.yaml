@@ -51,11 +51,12 @@ steps:
       - '--max-instances'
       - '100'
       - '--timeout'
-      - '900'
+      - '3600'
       - '--no-cpu-throttling'
       - '--execution-environment=gen2'
       - '--set-env-vars'
       - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=$PROJECT_ID,VERTEX_AI_LOCATION=asia-northeast1'
+      - '--cpu-boost'
 
 images:
   - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$BUILD_ID
