@@ -13,14 +13,6 @@ steps:
           --location=asia-northeast1 \
           --description="Search Restaurant Agent container images"
 
-  # Configure Docker to authenticate with Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gcloud auth configure-docker asia-northeast1-docker.pkg.dev
-
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: 
