@@ -26,7 +26,7 @@ steps:
     args: 
       - 'build'
       - '-t'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$BUILD_ID'
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:latest'
       - '.'
@@ -42,7 +42,7 @@ steps:
       - 'deploy'
       - 'search-restaurant-agent'
       - '--image'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$BUILD_ID'
       - '--region'
       - 'asia-northeast1'
       - '--platform'
@@ -64,7 +64,7 @@ steps:
       - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=$PROJECT_ID,VERTEX_AI_LOCATION=asia-northeast1'
 
 images:
-  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$BUILD_ID
   - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:latest
 
 options:
