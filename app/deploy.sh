@@ -126,7 +126,7 @@ gcloud run deploy "$SERVICE_NAME" \
     --execution-environment=gen2 \
     --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=${PROJECT_ID},VERTEX_AI_LOCATION=${REGION}" \
     --cpu-boost \
-    --startup-timeout=900
+    --startup-probe tcpSocket.port=3000,initialDelaySeconds=10,timeoutSeconds=30,periodSeconds=5,failureThreshold=10
 
 # Get service URL
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
