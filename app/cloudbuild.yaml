@@ -1,11 +1,39 @@
 steps:
+  # Create Artifact Registry repository if it doesn't exist
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories describe search-restaurant-agent \
+          --repository-format=docker \
+          --location=asia-northeast1 || \
+        gcloud artifacts repositories create search-restaurant-agent \
+          --repository-format=docker \
+          --location=asia-northeast1 \
+          --description="Search Restaurant Agent container images"
+
+  # Configure Docker to authenticate with Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/search-restaurant-agent:$COMMIT_SHA', '.']
+    args: 
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:latest'
+      - '.'
   
-  # Push the container image to Container Registry
+  # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/search-restaurant-agent:$COMMIT_SHA']
+    args: ['push', '--all-tags', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app']
   
   # Deploy container image to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -14,7 +42,7 @@ steps:
       - 'deploy'
       - 'search-restaurant-agent'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/search-restaurant-agent:$COMMIT_SHA'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA'
       - '--region'
       - 'asia-northeast1'
       - '--platform'
@@ -30,8 +58,14 @@ steps:
       - '0'
       - '--max-instances'
       - '100'
+      - '--timeout'
+      - '300'
       - '--set-env-vars'
-      - 'VERTEX_AI_PROJECT_ID=$PROJECT_ID,VERTEX_AI_LOCATION=asia-northeast1'
+      - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=$PROJECT_ID,VERTEX_AI_LOCATION=asia-northeast1'
 
 images:
-  - gcr.io/$PROJECT_ID/search-restaurant-agent:$COMMIT_SHA
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:$COMMIT_SHA
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/search-restaurant-agent/app:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
