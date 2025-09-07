@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LocationRequest, RestaurantResponse } from '../../types/restaurant';
 
 export default function Home() {
@@ -18,7 +18,7 @@ export default function Home() {
     display_name: string;
     lat: string;
     lon: string;
-    address?: any;
+    address?: Record<string, string>;
   }>>([]);
   const [showResults, setShowResults] = useState<boolean>(false);
 
@@ -108,55 +108,6 @@ export default function Home() {
     }
   };
 
-  const extractCoordsFromGoogleMapsUrl = (url: string): {latitude: number, longitude: number} | null => {
-    try {
-      // Google Maps URLの各種パターンに対応
-      // パターン1: @lat,lng,zoom
-      const atPattern = /@(-?\d+\.?\d*),(-?\d+\.?\d*)/;
-      const atMatch = url.match(atPattern);
-      if (atMatch) {
-        return {
-          latitude: parseFloat(atMatch[1]),
-          longitude: parseFloat(atMatch[2])
-        };
-      }
-
-      // パターン2: ll=lat,lng
-      const llPattern = /ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/;
-      const llMatch = url.match(llPattern);
-      if (llMatch) {
-        return {
-          latitude: parseFloat(llMatch[1]),
-          longitude: parseFloat(llMatch[2])
-        };
-      }
-
-      // パターン3: q=lat,lng
-      const qPattern = /q=(-?\d+\.?\d*),(-?\d+\.?\d*)/;
-      const qMatch = url.match(qPattern);
-      if (qMatch) {
-        return {
-          latitude: parseFloat(qMatch[1]),
-          longitude: parseFloat(qMatch[2])
-        };
-      }
-
-      // パターン4: /maps/place/name/@lat,lng
-      const placePattern = /\/maps\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/;
-      const placeMatch = url.match(placePattern);
-      if (placeMatch) {
-        return {
-          latitude: parseFloat(placeMatch[1]),
-          longitude: parseFloat(placeMatch[2])
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Google Maps URL解析エラー:', error);
-      return null;
-    }
-  };
 
   const searchLocation = async () => {
     if (!searchQuery.trim()) {
@@ -168,25 +119,6 @@ export default function Home() {
     setError('');
 
     try {
-      // Google Maps URLかどうかをチェック
-      if (searchQuery.includes('google.com/maps') || searchQuery.includes('goo.gl/maps')) {
-        const coords = extractCoordsFromGoogleMapsUrl(searchQuery);
-        if (coords) {
-          setLocation(coords);
-          
-          // 緯度経度から住所を取得
-          const addressResult = await getAddressFromCoordinates(coords.latitude, coords.longitude);
-          setAddress(addressResult);
-          
-          setIsSearching(false);
-          return;
-        } else {
-          setError('Google Maps URLから座標を取得できませんでした。別の形式のURLまたは場所名をお試しください。');
-          setIsSearching(false);
-          return;
-        }
-      }
-
       // 通常の場所名検索（複数結果を取得）
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&accept-language=ja&addressdetails=1`
@@ -222,7 +154,8 @@ export default function Home() {
     }
   };
 
-  const selectLocationFromResult = (result: { display_name: string; lat: string; lon: string; address?: any }) => {
+
+  const selectLocationFromResult = (result: { display_name: string; lat: string; lon: string; address?: Record<string, string> }) => {
     const coords = {
       latitude: parseFloat(result.lat),
       longitude: parseFloat(result.lon)
@@ -297,8 +230,8 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                現在地
+              <label className="block text-xl font-bold text-gray-900 mb-4">
+                📍 位置
               </label>
               <div className="flex items-center gap-4 mb-3">
                 <button
@@ -326,54 +259,59 @@ export default function Home() {
                 )}
               </div>
               
-              <div className="border-t pt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  場所を検索 (地名、住所、Google Mapsリンク)
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        if (!e.target.value.trim()) {
-                          setShowResults(false);
-                          setSearchResults([]);
-                        }
-                      }}
-                      placeholder="例: 東京駅、渋谷区、https://maps.google.com/..."
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          searchLocation();
-                        }
-                        if (e.key === 'Escape') {
-                          setShowResults(false);
-                        }
-                      }}
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setShowResults(false);
-                          setSearchResults([]);
+              <div className="border-t pt-3 space-y-4">
+                {/* 場所名検索 */}
+                <div>
+                  <label className="block text-lg font-semibold text-gray-900 mb-3">
+                    🔍 場所名検索
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          if (!e.target.value.trim()) {
+                            setShowResults(false);
+                            setSearchResults([]);
+                          }
                         }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        ✕
-                      </button>
-                    )}
+                        placeholder="例: 東京駅、渋谷区、新宿..."
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            searchLocation();
+                          }
+                          if (e.key === 'Escape') {
+                            setShowResults(false);
+                          }
+                        }}
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('');
+                            setShowResults(false);
+                            setSearchResults([]);
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={searchLocation}
+                      disabled={isSearching || !searchQuery.trim()}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      {isSearching ? '検索中...' : '検索'}
+                    </button>
                   </div>
-                  <button
-                    onClick={searchLocation}
-                    disabled={isSearching || !searchQuery.trim()}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  >
-                    {isSearching ? '検索中...' : '検索'}
-                  </button>
                 </div>
+
+              </div>
                 
                 {/* 検索結果の表示 */}
                 {showResults && searchResults.length > 0 && (
@@ -409,18 +347,22 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  日付
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
+            <div className="mt-8">
+              <label className="block text-xl font-bold text-gray-900 mb-4">
+                📅 日時選択
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    日付
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
               </div>
               
               <div>
@@ -433,6 +375,7 @@ export default function Home() {
                   onChange={(e) => setSelectedTime(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
+                </div>
               </div>
             </div>
 
@@ -455,7 +398,7 @@ export default function Home() {
         {restaurants && (
           <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">ランチ</h2>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">🍽️ ランチ</h2>
               <div className="space-y-4">
                 {restaurants.lunch_restaurants.map((restaurant, index) => (
                   <div key={index} className="bg-white rounded-lg shadow-md p-4">
@@ -474,7 +417,7 @@ export default function Home() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">ディナー</h2>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">🌃 ディナー</h2>
               <div className="space-y-4">
                 {restaurants.dinner_restaurants.map((restaurant, index) => (
                   <div key={index} className="bg-white rounded-lg shadow-md p-4">
@@ -494,6 +437,5 @@ export default function Home() {
           </div>
         )}
       </div>
-    </div>
   );
 }
