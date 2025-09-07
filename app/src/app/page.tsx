@@ -14,18 +14,29 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<Array<{
+    display_name: string;
+    lat: string;
+    lon: string;
+    address?: any;
+  }>>([]);
+  const [showResults, setShowResults] = useState<boolean>(false);
 
   // 初期化：デフォルト値設定と位置情報の自動取得
   useEffect(() => {
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const timeStr = now.toTimeString().slice(0, 5); // HH:MM format
+    const initializeApp = async () => {
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().slice(0, 5); // HH:MM format
+      
+      setSelectedDate(dateStr);
+      setSelectedTime(timeStr);
+      
+      // 自動で位置情報を取得
+      await getCurrentLocation();
+    };
     
-    setSelectedDate(dateStr);
-    setSelectedTime(timeStr);
-    
-    // 自動で位置情報を取得
-    getCurrentLocation();
+    initializeApp();
   }, []);
 
   const formatJapaneseAddress = (addressData: {address?: {[key: string]: string}, display_name?: string}) => {
@@ -176,9 +187,9 @@ export default function Home() {
         }
       }
 
-      // 通常の場所名検索
+      // 通常の場所名検索（複数結果を取得）
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&accept-language=ja`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&accept-language=ja&addressdetails=1`
       );
       
       if (!response.ok) {
@@ -189,20 +200,19 @@ export default function Home() {
       
       if (data.length === 0) {
         setError('指定された場所が見つかりませんでした。');
+        setShowResults(false);
+        setSearchResults([]);
         return;
       }
       
-      const result = data[0];
-      const coords = {
-        latitude: parseFloat(result.lat),
-        longitude: parseFloat(result.lon)
-      };
+      // 検索結果を保存して表示
+      setSearchResults(data);
+      setShowResults(true);
       
-      setLocation(coords);
-      setAddress(formatJapaneseAddress({
-        display_name: result.display_name,
-        address: result.address
-      }));
+      // 最初の結果を自動選択
+      if (data.length > 0) {
+        selectLocationFromResult(data[0]);
+      }
       
     } catch (error) {
       console.error('場所検索エラー:', error);
@@ -210,6 +220,21 @@ export default function Home() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const selectLocationFromResult = (result: { display_name: string; lat: string; lon: string; address?: any }) => {
+    const coords = {
+      latitude: parseFloat(result.lat),
+      longitude: parseFloat(result.lon)
+    };
+    
+    setLocation(coords);
+    const formattedAddress = formatJapaneseAddress({
+      display_name: result.display_name,
+      address: result.address
+    });
+    setAddress(formattedAddress || result.display_name);
+    setShowResults(false);
   };
 
   const searchRestaurants = async () => {
@@ -306,18 +331,41 @@ export default function Home() {
                   場所を検索 (地名、住所、Google Mapsリンク)
                 </label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="例: 東京駅、渋谷区、https://maps.google.com/..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        searchLocation();
-                      }
-                    }}
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        if (!e.target.value.trim()) {
+                          setShowResults(false);
+                          setSearchResults([]);
+                        }
+                      }}
+                      placeholder="例: 東京駅、渋谷区、https://maps.google.com/..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          searchLocation();
+                        }
+                        if (e.key === 'Escape') {
+                          setShowResults(false);
+                        }
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setShowResults(false);
+                          setSearchResults([]);
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={searchLocation}
                     disabled={isSearching || !searchQuery.trim()}
@@ -326,6 +374,38 @@ export default function Home() {
                     {isSearching ? '検索中...' : '検索'}
                   </button>
                 </div>
+                
+                {/* 検索結果の表示 */}
+                {showResults && searchResults.length > 0 && (
+                  <div className="mt-3 border border-gray-200 rounded-md bg-white shadow-lg max-h-60 overflow-y-auto">
+                    <div className="p-2 bg-gray-50 border-b text-sm text-gray-600">
+                      {searchResults.length}件の検索結果 (クリックして選択)
+                    </div>
+                    {searchResults.map((result, index) => {
+                      const formattedAddress = formatJapaneseAddress({
+                        display_name: result.display_name,
+                        address: result.address
+                      });
+                      
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => selectLocationFromResult(result)}
+                          className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-gray-900 mb-1">
+                            {formattedAddress || result.display_name}
+                          </div>
+                          {formattedAddress !== result.display_name && (
+                            <div className="text-sm text-gray-500 truncate">
+                              {result.display_name}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
