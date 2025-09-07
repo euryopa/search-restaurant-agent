@@ -47,6 +47,7 @@ RUN chown nextjs:nodejs .next
 # Copy the standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs start-server.js ./
 
 USER nextjs
 
@@ -55,13 +56,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD echo "Starting Next.js server..." && \
-    echo "Environment: $NODE_ENV" && \
-    echo "Port: $PORT" && \
-    echo "Hostname: $HOSTNAME" && \
-    echo "Directory contents:" && \
-    ls -la && \
-    echo "Node version: $(node --version)" && \
-    echo "NPM version: $(npm --version)" && \
-    echo "Starting server.js..." && \
-    exec node server.js
+CMD ["node", "start-server.js"]
