@@ -382,7 +382,7 @@ export default function Home() {
             <button
               onClick={searchRestaurants}
               disabled={!location || !selectedDate || !selectedTime || isLoading}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
+              className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer mt-8"
             >
               {isLoading ? '検索中...' : 'レストランを検索'}
             </button>
