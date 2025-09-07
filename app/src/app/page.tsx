@@ -1,16 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LocationRequest, RestaurantResponse } from '../../types/restaurant';
 
 export default function Home() {
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [address, setAddress] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
   const [restaurants, setRestaurants] = useState<RestaurantResponse | null>(null);
   const [error, setError] = useState<string>('');
+
+  // Hydration error回避のため、クライアントサイドでデフォルト値を設定
+  useEffect(() => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().slice(0, 5); // HH:MM format
+    
+    setSelectedDate(dateStr);
+    setSelectedTime(timeStr);
+  }, []);
 
   const formatJapaneseAddress = (addressData: {address?: {[key: string]: string}, display_name?: string}) => {
     if (!addressData.address) return addressData.display_name;
@@ -87,8 +98,8 @@ export default function Home() {
       return;
     }
     
-    if (!selectedDate) {
-      setError('日付を選択してください。');
+    if (!selectedDate || !selectedTime) {
+      setError('日付と時間を選択してください。');
       return;
     }
 
@@ -96,9 +107,12 @@ export default function Home() {
     setError('');
 
     try {
+      // 日付と時間を組み合わせてISO文字列を作成
+      const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+      
       const requestBody: LocationRequest = {
         location,
-        date: new Date(selectedDate).toISOString()
+        date: combinedDateTime.toISOString()
       };
 
       const response = await fetch('/api/restaurants', {
@@ -122,8 +136,6 @@ export default function Home() {
     }
   };
 
-  // Set minimum date to today
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="min-h-screen p-8 bg-gray-50">
@@ -170,22 +182,36 @@ export default function Home() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                日付
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={today}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  日付
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  時間
+                </label>
+                <input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+              </div>
             </div>
 
             <button
               onClick={searchRestaurants}
-              disabled={!location || !selectedDate || isLoading}
+              disabled={!location || !selectedDate || !selectedTime || isLoading}
               className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
             >
               {isLoading ? '検索中...' : 'レストランを検索'}
