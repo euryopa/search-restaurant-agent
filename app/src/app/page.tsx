@@ -12,8 +12,10 @@ export default function Home() {
   const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
   const [restaurants, setRestaurants] = useState<RestaurantResponse | null>(null);
   const [error, setError] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // Hydration error回避のため、クライアントサイドでデフォルト値を設定
+  // 初期化：デフォルト値設定と位置情報の自動取得
   useEffect(() => {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
@@ -21,6 +23,9 @@ export default function Home() {
     
     setSelectedDate(dateStr);
     setSelectedTime(timeStr);
+    
+    // 自動で位置情報を取得
+    getCurrentLocation();
   }, []);
 
   const formatJapaneseAddress = (addressData: {address?: {[key: string]: string}, display_name?: string}) => {
@@ -92,6 +97,121 @@ export default function Home() {
     }
   };
 
+  const extractCoordsFromGoogleMapsUrl = (url: string): {latitude: number, longitude: number} | null => {
+    try {
+      // Google Maps URLの各種パターンに対応
+      // パターン1: @lat,lng,zoom
+      const atPattern = /@(-?\d+\.?\d*),(-?\d+\.?\d*)/;
+      const atMatch = url.match(atPattern);
+      if (atMatch) {
+        return {
+          latitude: parseFloat(atMatch[1]),
+          longitude: parseFloat(atMatch[2])
+        };
+      }
+
+      // パターン2: ll=lat,lng
+      const llPattern = /ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/;
+      const llMatch = url.match(llPattern);
+      if (llMatch) {
+        return {
+          latitude: parseFloat(llMatch[1]),
+          longitude: parseFloat(llMatch[2])
+        };
+      }
+
+      // パターン3: q=lat,lng
+      const qPattern = /q=(-?\d+\.?\d*),(-?\d+\.?\d*)/;
+      const qMatch = url.match(qPattern);
+      if (qMatch) {
+        return {
+          latitude: parseFloat(qMatch[1]),
+          longitude: parseFloat(qMatch[2])
+        };
+      }
+
+      // パターン4: /maps/place/name/@lat,lng
+      const placePattern = /\/maps\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/;
+      const placeMatch = url.match(placePattern);
+      if (placeMatch) {
+        return {
+          latitude: parseFloat(placeMatch[1]),
+          longitude: parseFloat(placeMatch[2])
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Google Maps URL解析エラー:', error);
+      return null;
+    }
+  };
+
+  const searchLocation = async () => {
+    if (!searchQuery.trim()) {
+      setError('検索する場所を入力してください。');
+      return;
+    }
+
+    setIsSearching(true);
+    setError('');
+
+    try {
+      // Google Maps URLかどうかをチェック
+      if (searchQuery.includes('google.com/maps') || searchQuery.includes('goo.gl/maps')) {
+        const coords = extractCoordsFromGoogleMapsUrl(searchQuery);
+        if (coords) {
+          setLocation(coords);
+          
+          // 緯度経度から住所を取得
+          const addressResult = await getAddressFromCoordinates(coords.latitude, coords.longitude);
+          setAddress(addressResult);
+          
+          setIsSearching(false);
+          return;
+        } else {
+          setError('Google Maps URLから座標を取得できませんでした。別の形式のURLまたは場所名をお試しください。');
+          setIsSearching(false);
+          return;
+        }
+      }
+
+      // 通常の場所名検索
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&accept-language=ja`
+      );
+      
+      if (!response.ok) {
+        throw new Error('場所の検索に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        setError('指定された場所が見つかりませんでした。');
+        return;
+      }
+      
+      const result = data[0];
+      const coords = {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon)
+      };
+      
+      setLocation(coords);
+      setAddress(formatJapaneseAddress({
+        display_name: result.display_name,
+        address: result.address
+      }));
+      
+    } catch (error) {
+      console.error('場所検索エラー:', error);
+      setError('場所の検索中にエラーが発生しました。');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const searchRestaurants = async () => {
     if (!location) {
       setError('まず位置情報を取得してください。');
@@ -155,7 +275,7 @@ export default function Home() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 現在地
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mb-3">
                 <button
                   onClick={getCurrentLocation}
                   disabled={isLocationLoading}
@@ -179,6 +299,33 @@ export default function Home() {
                     )}
                   </div>
                 )}
+              </div>
+              
+              <div className="border-t pt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  場所を検索 (地名、住所、Google Mapsリンク)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="例: 東京駅、渋谷区、https://maps.google.com/..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        searchLocation();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={searchLocation}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    {isSearching ? '検索中...' : '検索'}
+                  </button>
+                </div>
               </div>
             </div>
 
