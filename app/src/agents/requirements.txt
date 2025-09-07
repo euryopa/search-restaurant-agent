@@ -1,0 +1,4 @@
+functions-framework==3.*
+google-cloud-aiplatform==1.53.*
+google-cloud-logging==3.8.*
+flask==3.0.*
