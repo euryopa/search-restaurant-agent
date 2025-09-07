@@ -5,27 +5,79 @@ import { LocationRequest, RestaurantResponse } from '../../types/restaurant';
 
 export default function Home() {
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [address, setAddress] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
   const [restaurants, setRestaurants] = useState<RestaurantResponse | null>(null);
   const [error, setError] = useState<string>('');
 
-  const getCurrentLocation = () => {
+  const formatJapaneseAddress = (addressData: {address?: {[key: string]: string}, display_name?: string}) => {
+    if (!addressData.address) return addressData.display_name;
+    
+    const addr = addressData.address;
+    const parts = [];
+    
+    // 日本の住所順序: 都道府県 → 市区町村 → 町名 → 番地
+    if (addr.state || addr.prefecture) parts.push(addr.state || addr.prefecture);
+    if (addr.city) parts.push(addr.city);
+    if (addr.town || addr.suburb || addr.neighbourhood) parts.push(addr.town || addr.suburb || addr.neighbourhood);
+    if (addr.house_number && addr.road) parts.push(`${addr.road}${addr.house_number}`);
+    else if (addr.road) parts.push(addr.road);
+    
+    return parts.length > 0 ? parts.join('') : addressData.display_name;
+  };
+
+  const getAddressFromCoordinates = async (lat: number, lng: number) => {
+    try {
+      // OpenStreetMapのNominatim APIを使用してリバースジオコーディング
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&addressdetails=1`
+      );
+      
+      if (!response.ok) {
+        throw new Error('住所の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      return formatJapaneseAddress(data) || '住所が見つかりませんでした';
+    } catch (error) {
+      console.error('住所取得エラー:', error);
+      return '住所の取得に失敗しました';
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setIsLocationLoading(true);
+    setError('');
+    
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-          setError('');
+        async (position) => {
+          try {
+            const coords = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            };
+            setLocation(coords);
+            
+            // 住所を取得
+            const addressResult = await getAddressFromCoordinates(coords.latitude, coords.longitude);
+            setAddress(addressResult);
+          } catch (error) {
+            setError('住所の取得に失敗しました。');
+          } finally {
+            setIsLocationLoading(false);
+          }
         },
         () => {
           setError('位置情報の取得に失敗しました。位置情報の使用を許可してください。');
+          setIsLocationLoading(false);
         }
       );
     } else {
       setError('お使いのブラウザは位置情報に対応していません。');
+      setIsLocationLoading(false);
     }
   };
 
@@ -94,14 +146,26 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={getCurrentLocation}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  disabled={isLocationLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
-                  位置情報を取得
+                  {isLocationLoading ? '取得中...' : '位置情報を取得'}
                 </button>
                 {location && (
-                  <span className="text-sm text-green-600">
-                    取得済み ({location.latitude.toFixed(4)}, {location.longitude.toFixed(4)})
-                  </span>
+                  <div className="text-green-600">
+                    {address && (
+                      <div className="text-gray-700 text-base">
+                        📍 <a
+                          href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {address}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -122,7 +186,7 @@ export default function Home() {
             <button
               onClick={searchRestaurants}
               disabled={!location || !selectedDate || isLoading}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
             >
               {isLoading ? '検索中...' : 'レストランを検索'}
             </button>
@@ -136,7 +200,7 @@ export default function Home() {
         </div>
 
         {restaurants && (
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-8">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">ランチ</h2>
               <div className="space-y-4">
