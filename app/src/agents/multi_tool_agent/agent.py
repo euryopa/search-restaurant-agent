@@ -1,67 +1,36 @@
-import datetime
-from zoneinfo import ZoneInfo
-from google.adk.agents import Agent
+from google.adk.agents import LlmAgent
 
-def get_weather(city: str) -> dict:
-    """Retrieves the current weather report for a specified city.
+# フライト エージェント: フライトの予約と情報に特化
+flight_agent = LlmAgent(
+    model='gemini-2.0-flash',
+    name="FlightAgent",
+    description="フライト予約エージェント",
+    instruction=f"""あなたはフライト予約エージェントです... 常に有効な JSON を返します...""")
 
-    Args:
-        city (str): The name of the city for which to retrieve the weather report.
+# ホテル エージェント: ホテルの予約と情報に特化
+hotel_agent = LlmAgent(
+    model='gemini-2.0-flash',
+    name="HotelAgent",
+    description="ホテル予約エージェント",
+    instruction=f"""あなたはホテル予約エージェントです... 常に有効な JSON を返します...""")
 
-    Returns:
-        dict: status and result or error msg.
-    """
-    if city.lower() == "new york":
-        return {
-            "status": "success",
-            "report": (
-                "The weather in New York is sunny with a temperature of 25 degrees"
-                " Celsius (77 degrees Fahrenheit)."
-            ),
-        }
-    else:
-        return {
-            "status": "error",
-            "error_message": f"Weather information for '{city}' is not available.",
-        }
+# 観光エージェント: 観光のおすすめ情報を提供することに特化
+sightseeing_agent = LlmAgent(
+    model='gemini-2.0-flash',
+    name="SightseeingAgent",
+    description="観光情報エージェント",
+    instruction=f"""あなたは観光情報エージェントです... 常に有効な JSON を返します...""")
 
-
-def get_current_time(city: str) -> dict:
-    """Returns the current time in a specified city.
-
-    Args:
-        city (str): The name of the city for which to retrieve the current time.
-
-    Returns:
-        dict: status and result or error msg.
-    """
-
-    if city.lower() == "new york":
-        tz_identifier = "America/New_York"
-    else:
-        return {
-            "status": "error",
-            "error_message": (
-                f"Sorry, I don't have timezone information for {city}."
-            ),
-        }
-
-    tz = ZoneInfo(tz_identifier)
-    now = datetime.datetime.now(tz)
-    report = (
-        f'The current time in {city} is {now.strftime("%Y-%m-%d %H:%M:%S %Z%z")}'
-    )
-    return {"status": "success", "report": report}
-
-
-root_agent = Agent(
-    name="weather_time_agent",
-    model="gemini-2.0-flash",
-    description=(
-        "Agent to answer questions about the time and weather in a city."
-    ),
-    instruction=(
-        "You are a helpful agent who can answer user questions about the time and weather in a city."
-    ),
-    tools=[get_weather, get_current_time],
+# 旅行プランナーのコーディネーターとして機能するルート エージェント
+root_agent = LlmAgent(
+    model='gemini-2.0-flash',
+    name="TripPlanner",
+    instruction=f"""
+   全体をとりまとめる旅行プランナーとして機能します。
+   - FlightAgent を使用してフライトを検索して予約する
+   - HotelAgent を使用して宿泊施設を検索して予約する
+   - SightSeeingAgent を使用して訪問する場所に関する情報を検索する
+    ...
+    """,
+   sub_agents=[flight_agent, hotel_agent, sightseeing_agent] # コーディネーターがこれらのサブエージェントを管理する
 )
