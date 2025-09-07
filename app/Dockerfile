@@ -55,4 +55,13 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD echo "Starting Next.js server..." && \
+    echo "Environment: $NODE_ENV" && \
+    echo "Port: $PORT" && \
+    echo "Hostname: $HOSTNAME" && \
+    echo "Directory contents:" && \
+    ls -la && \
+    echo "Node version: $(node --version)" && \
+    echo "NPM version: $(npm --version)" && \
+    echo "Starting server.js..." && \
+    node server.js
