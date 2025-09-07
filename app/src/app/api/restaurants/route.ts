@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LocationRequest, RestaurantResponse } from '../../../types/restaurant';
+import { LocationRequest, RestaurantResponse } from '../../../../types/restaurant';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
 }
 
 // TODO: Implement actual Vertex AI Agent integration
-async function callVertexAIAgent(request: LocationRequest): Promise<RestaurantResponse> {
-  // This function will be implemented with actual Vertex AI Agent calls
-  // For now, it's just a placeholder
-  throw new Error('Not implemented');
-}
+// async function callVertexAIAgent(request: LocationRequest): Promise<RestaurantResponse> {
+//   // This function will be implemented with actual Vertex AI Agent calls
+//   // For now, it's just a placeholder
+//   throw new Error('Not implemented');
+// }

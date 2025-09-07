@@ -64,7 +64,7 @@ export default function Home() {
             // 住所を取得
             const addressResult = await getAddressFromCoordinates(coords.latitude, coords.longitude);
             setAddress(addressResult);
-          } catch (error) {
+          } catch {
             setError('住所の取得に失敗しました。');
           } finally {
             setIsLocationLoading(false);
