@@ -108,7 +108,6 @@ export default function Home() {
     }
   };
 
-
   const searchLocation = async () => {
     if (!searchQuery.trim()) {
       setError('検索する場所を入力してください。');
@@ -153,7 +152,6 @@ export default function Home() {
       setIsSearching(false);
     }
   };
-
 
   const selectLocationFromResult = (result: { display_name: string; lat: string; lon: string; address?: Record<string, string> }) => {
     const coords = {
@@ -214,42 +212,63 @@ export default function Home() {
     }
   };
 
-
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            レストラン検索エージェント
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto p-6 lg:p-8">
+        <header className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-200 rounded-2xl mb-6 shadow-lg">
+            <span className="text-2xl">🍽️</span>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+            Restaurant Finder
           </h1>
-          <p className="text-gray-600">
-            AIがあなたの現在地と日付に基づいておすすめのレストランを見つけます
+          <p className="text-lg text-gray-500 max-w-xl mx-auto">
+            AIが最適なレストランを見つけます
           </p>
         </header>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xl font-bold text-gray-900 mb-4">
-                📍 位置
-              </label>
-              <div className="flex items-center gap-4 mb-3">
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <div className="space-y-8">
+            {/* Location Section */}
+            <div className="space-y-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-200 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-blue-700 text-sm font-bold">📍</span>
+                </div>
+                <h2 className="text-xl font-bold text-gray-700">位置情報</h2>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={getCurrentLocation}
                   disabled={isLocationLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="px-6 py-3 bg-blue-300 text-blue-800 rounded-xl hover:bg-blue-400 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-md hover:shadow-lg"
                 >
-                  {isLocationLoading ? '取得中...' : '位置情報を取得'}
+                  <div className="flex items-center justify-center">
+                    {isLocationLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></div>
+                        取得中...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">📍</span>
+                        現在地を取得
+                      </>
+                    )}
+                  </div>
                 </button>
+                
                 {location && (
-                  <div className="text-green-600">
+                  <div className="flex-1 px-4 py-3 bg-green-50 rounded-xl border border-green-200">
                     {address && (
-                      <div className="text-gray-700 text-base">
-                        📍 <a
+                      <div className="flex items-center">
+                        <span className="mr-2 text-green-600">✅</span>
+                        <a
                           href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
+                          className="text-green-800 hover:text-green-900 font-medium hover:underline transition-colors"
                         >
                           {address}
                         </a>
@@ -259,66 +278,76 @@ export default function Home() {
                 )}
               </div>
               
-              <div className="border-t pt-3 space-y-4">
-                {/* 場所名検索 */}
-                <div>
-                  <label className="block text-lg font-semibold text-gray-900 mb-3">
-                    🔍 場所名検索
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          if (!e.target.value.trim()) {
-                            setShowResults(false);
-                            setSearchResults([]);
-                          }
-                        }}
-                        placeholder="例: 東京駅、渋谷区、新宿..."
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            searchLocation();
-                          }
-                          if (e.key === 'Escape') {
-                            setShowResults(false);
-                          }
-                        }}
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => {
-                            setSearchQuery('');
-                            setShowResults(false);
-                            setSearchResults([]);
-                          }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={searchLocation}
-                      disabled={isSearching || !searchQuery.trim()}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                    >
-                      {isSearching ? '検索中...' : '検索'}
-                    </button>
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-6 h-6 bg-purple-200 rounded-md flex items-center justify-center mr-3">
+                    <span className="text-purple-700 text-xs">🔍</span>
                   </div>
+                  <h3 className="text-lg font-semibold text-gray-700">場所を検索</h3>
                 </div>
-
+                
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        if (!e.target.value.trim()) {
+                          setShowResults(false);
+                          setSearchResults([]);
+                        }
+                      }}
+                      placeholder="東京駅、渋谷区、新宿..."
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent text-gray-800 placeholder-gray-400"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          searchLocation();
+                        }
+                        if (e.key === 'Escape') {
+                          setShowResults(false);
+                        }
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setShowResults(false);
+                          setSearchResults([]);
+                        }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={searchLocation}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-6 py-3 bg-purple-300 text-purple-800 rounded-xl hover:bg-purple-400 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold shadow-md hover:shadow-lg"
+                  >
+                    {isSearching ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-800 mr-2"></div>
+                        検索中
+                      </div>
+                    ) : (
+                      '検索'
+                    )}
+                  </button>
+                </div>
               </div>
                 
-                {/* 検索結果の表示 */}
-                {showResults && searchResults.length > 0 && (
-                  <div className="mt-3 border border-gray-200 rounded-md bg-white shadow-lg max-h-60 overflow-y-auto">
-                    <div className="p-2 bg-gray-50 border-b text-sm text-gray-600">
-                      {searchResults.length}件の検索結果 (クリックして選択)
-                    </div>
+              {/* Search Results */}
+              {showResults && searchResults.length > 0 && (
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">
+                      {searchResults.length}件の検索結果
+                    </span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
                     {searchResults.map((result, index) => {
                       const formattedAddress = formatJapaneseAddress({
                         display_name: result.display_name,
@@ -329,9 +358,9 @@ export default function Home() {
                         <button
                           key={index}
                           onClick={() => selectLocationFromResult(result)}
-                          className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          className="w-full text-left p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
                         >
-                          <div className="font-medium text-gray-900 mb-1">
+                          <div className="font-semibold text-gray-800 mb-1">
                             {formattedAddress || result.display_name}
                           </div>
                           {formattedAddress !== result.display_name && (
@@ -343,93 +372,137 @@ export default function Home() {
                       );
                     })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            <div className="mt-8">
-              <label className="block text-xl font-bold text-gray-900 mb-4">
-                📅 日時選択
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Date Time Section */}
+            <div className="space-y-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-orange-200 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-orange-700 text-sm font-bold">📅</span>
+                </div>
+                <h2 className="text-xl font-bold text-gray-700">日時選択</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    日付
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">
+                    📅 日付
                   </label>
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent text-gray-800"
                   />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  時間
-                </label>
-                <input
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">
+                    🕐 時間
+                  </label>
+                  <input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent text-gray-800"
+                  />
                 </div>
               </div>
             </div>
 
+            {/* Search Button */}
             <button
               onClick={searchRestaurants}
               disabled={!location || !selectedDate || !selectedTime || isLoading}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer mt-8"
+              className="w-full px-8 py-4 bg-red-300 text-red-800 rounded-xl hover:bg-red-400 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-bold text-lg shadow-lg hover:shadow-xl"
             >
-              {isLoading ? '検索中...' : 'レストランを検索'}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-800 mr-3"></div>
+                  レストランを検索中...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <span className="mr-2">🔎</span>
+                  レストランを検索
+                </div>
+              )}
             </button>
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-              {error}
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+              <div className="flex items-center">
+                <span className="mr-2">⚠️</span>
+                {error}
+              </div>
             </div>
           )}
         </div>
 
+        {/* Results Section */}
         {restaurants && (
-          <div className="space-y-8">
+          <div className="space-y-10">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">🍽️ ランチ</h2>
-              <div className="space-y-4">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-yellow-200 rounded-xl flex items-center justify-center mr-4">
+                  <span className="text-yellow-700 text-lg">🍽️</span>
+                </div>
+                <h2 className="text-3xl font-bold text-gray-700">
+                  ランチ
+                </h2>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
                 {restaurants.lunch_restaurants.map((restaurant, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow-md p-4">
+                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
                     <a
                       href={restaurant.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 font-medium text-lg block mb-2"
+                      className="block mb-4"
                     >
-                      レストラン {index + 1} →
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold text-gray-700 hover:text-orange-600 transition-colors">
+                          レストラン {index + 1}
+                        </h3>
+                        <span className="text-lg">↗️</span>
+                      </div>
                     </a>
-                    <p className="text-gray-700">{restaurant.reason}</p>
+                    <p className="text-gray-600 leading-relaxed">{restaurant.reason}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">🌃 ディナー</h2>
-              <div className="space-y-4">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-red-200 rounded-xl flex items-center justify-center mr-4">
+                  <span className="text-red-700 text-lg">🌃</span>
+                </div>
+                <h2 className="text-3xl font-bold text-gray-700">
+                  ディナー
+                </h2>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
                 {restaurants.dinner_restaurants.map((restaurant, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow-md p-4">
+                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
                     <a
                       href={restaurant.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 font-medium text-lg block mb-2"
+                      className="block mb-4"
                     >
-                      レストラン {index + 1} →
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold text-gray-700 hover:text-red-600 transition-colors">
+                          レストラン {index + 1}
+                        </h3>
+                        <span className="text-lg">↗️</span>
+                      </div>
                     </a>
-                    <p className="text-gray-700">{restaurant.reason}</p>
+                    <p className="text-gray-600 leading-relaxed">{restaurant.reason}</p>
                   </div>
                 ))}
               </div>
@@ -437,5 +510,6 @@ export default function Home() {
           </div>
         )}
       </div>
+    </div>
   );
 }
