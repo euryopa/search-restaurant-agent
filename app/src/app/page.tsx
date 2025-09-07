@@ -200,10 +200,23 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('レストラン検索に失敗しました。');
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.error || `レストラン検索に失敗しました (${response.status})`;
+        throw new Error(errorMessage);
       }
 
-      const data: RestaurantResponse = await response.json();
+      const data = await response.json();
+      
+      // Check if response contains error
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Validate response structure
+      if (!data.lunch_restaurants || !data.dinner_restaurants) {
+        throw new Error('無効なレスポンス形式です。');
+      }
+      
       setRestaurants(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました。');
@@ -457,21 +470,42 @@ export default function Home() {
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 {restaurants.lunch_restaurants.map((restaurant, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-200 transition-colors">
+                          <span className="text-orange-600 text-lg">🍴</span>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600 transition-colors">
+                            おすすめランチ {index + 1}
+                          </h3>
+                          <div className="text-sm text-gray-500 mt-1">
+                            AI推薦レストラン
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        ↗️
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border-l-4 border-orange-300">
+                      <p className="text-gray-700 leading-relaxed text-sm">
+                        {restaurant.reason}
+                      </p>
+                    </div>
+                    
                     <a
                       href={restaurant.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block mb-4"
+                      className="inline-flex items-center px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 rounded-lg font-medium transition-colors duration-200 group/link"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xl font-bold text-gray-700 hover:text-orange-600 transition-colors">
-                          レストラン {index + 1}
-                        </h3>
-                        <span className="text-lg">↗️</span>
-                      </div>
+                      <span className="mr-2">🌐</span>
+                      詳細を見る
+                      <span className="ml-2 transform group-hover/link:translate-x-1 transition-transform duration-200">→</span>
                     </a>
-                    <p className="text-gray-600 leading-relaxed">{restaurant.reason}</p>
                   </div>
                 ))}
               </div>
@@ -488,21 +522,42 @@ export default function Home() {
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 {restaurants.dinner_restaurants.map((restaurant, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-red-200 transition-colors">
+                          <span className="text-red-600 text-lg">🍷</span>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-800 group-hover:text-red-600 transition-colors">
+                            おすすめディナー {index + 1}
+                          </h3>
+                          <div className="text-sm text-gray-500 mt-1">
+                            AI推薦レストラン
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        ↗️
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border-l-4 border-red-300">
+                      <p className="text-gray-700 leading-relaxed text-sm">
+                        {restaurant.reason}
+                      </p>
+                    </div>
+                    
                     <a
                       href={restaurant.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block mb-4"
+                      className="inline-flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 rounded-lg font-medium transition-colors duration-200 group/link"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xl font-bold text-gray-700 hover:text-red-600 transition-colors">
-                          レストラン {index + 1}
-                        </h3>
-                        <span className="text-lg">↗️</span>
-                      </div>
+                      <span className="mr-2">🌐</span>
+                      詳細を見る
+                      <span className="ml-2 transform group-hover/link:translate-x-1 transition-transform duration-200">→</span>
                     </a>
-                    <p className="text-gray-600 leading-relaxed">{restaurant.reason}</p>
                   </div>
                 ))}
               </div>

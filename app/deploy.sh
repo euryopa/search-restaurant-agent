@@ -36,16 +36,24 @@ log_error() {
     exit 1
 }
 
-# Get project ID
+# Get project ID and optional backend URL
 if [ -z "$1" ]; then
     PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
     if [ -z "$PROJECT_ID" ]; then
-        log_error "No project ID provided and no default project set. Usage: ./deploy.sh [PROJECT_ID]"
+        log_error "No project ID provided and no default project set. Usage: ./deploy.sh [PROJECT_ID] [BACKEND_URL]"
     fi
     log_info "Using default project: $PROJECT_ID"
 else
     PROJECT_ID="$1"
     log_info "Using project: $PROJECT_ID"
+fi
+
+# Optional backend URL for service communication
+BACKEND_URL="$2"
+if [ -n "$BACKEND_URL" ]; then
+    log_info "Backend URL provided: $BACKEND_URL"
+else
+    log_info "No backend URL provided"
 fi
 
 # Set project
@@ -124,7 +132,7 @@ gcloud run deploy "$SERVICE_NAME" \
     --timeout=3600 \
     --no-cpu-throttling \
     --execution-environment=gen2 \
-    --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=${PROJECT_ID},VERTEX_AI_LOCATION=${REGION}" \
+    --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,VERTEX_AI_PROJECT_ID=${PROJECT_ID},VERTEX_AI_LOCATION=${REGION}$([ -n "$BACKEND_URL" ] && echo ",NEXT_PUBLIC_API_URL=${BACKEND_URL}")" \
     --cpu-boost
 
 # Get service URL
